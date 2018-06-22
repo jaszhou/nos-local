@@ -2,6 +2,8 @@
 
 These are common issues encountered when starting to develop DApp with nOS. Hopefully it can help new developer to get started quickly.
 
+Note:  if the command is not environment specific, you may run it from Windows/MacOS/Linux.
+
 Questions/Answers:
 
 1. How do I access neoscan for privatenet?
@@ -12,6 +14,8 @@ From the browser, access the link:  http://localhost:4000.  If the URL is not ac
 2. How to resolve sync issue when using privatenet?
 
 Go to command line:
+
+MacOS/Linux
 
 ```
 cd <project location>/nos-local/neo-local
@@ -30,7 +34,33 @@ You may also check from docker command:
 docker ps
 ```
 
+Windows
+
+```
+cd <project location>\nos-local\neo-local
+make stop
+
+```
+Wait for the containers to stop completely, then run:
+
+```
+cd <project location>\nos-local
+makeWIN
+```
+You may also check from docker command:
+
+```
+docker ps
+```
+
 3. How to check current sync status from privatenet?
+
+First log into the command prompt:
+
+```
+$ docker exec -it neo-python /bin/sh -c /bin/bash
+$ np-prompt -p -v
+```
 
 From the container command prompt, run:  state
 
@@ -66,12 +96,77 @@ neo> export wif AK2nJJpJr6o664CWJKi1QRXjqeic2zRp8y
 WIF key export: KxDgvEKzgSBPPfuVfw67oPQBSjidEiqTHURKSDL1R7yGaGYAeYnr
 
 ```
-You can use the export string to log into nOS client by choosing WIF login option.
+You can use the export string `KxDgvEKzgSBPPfuVfw67oPQBSjidEiqTHURKSDL1R7yGaGYAeYnr` to log into nOS client by choosing WIF login option.
 
 6. Where do I find the network option of nOSLocal?
 
-Somethings the nOSLocal option is missing from the network setting, to rectify it, simply click the button of 'Clear Custom Network Configuration' and it should be available again.
+Somethings the nOSLocal option is missing from the network setting in nOS client, to rectify it, simply click the button of 'Clear Custom Network Configuration' and it should be available again.
 
 7. Why my NEO/GAS balance is not shown after transfer?
 
 You'll need to sign out and sign in nOS client again to see the new balance.
+
+8. How to check if privatenet is working?
+
+When the block height of python prompt `np-prompt` is not updating with command `state`, you may check the log from container `cityofzion/neo-privatenet` to make sure it is progressing.
+
+First find the container id from docker
+
+MacOS/Linux
+
+```
+docker ps | grep neo-privatenet
+05481644fe08        cityofzion/neo-privatenet                 "/bin/bash /opt/run.…"   24 hours ago        Up 24 hours         0.0.0.0:20333-20336->20333-20336/tcp, 0.0.0.0:30333-30336->30333-30336/tcp   neo-nodes
+```
+
+Windows
+
+```
+docker ps | findstr neo-privatenet
+05481644fe08        cityofzion/neo-privatenet                 "/bin/bash /opt/run.…"   24 hours ago        Up 24 hours         0.0.0.0:20333-20336->20333-20336/tcp, 0.0.0.0:30333-30336->30333-30336/tcp   neo-nodes
+```
+
+
+Log into the container:
+
+```
+docker exec -it 05481644fe08 /bin/bash
+
+cd /opt/node1/neo-cli/Logs
+
+root@05481644fe08:/opt/node1/neo-cli/Logs# tail -f *.log
+
+```
+
+The log should keep rolling, if not, try the `make stop` as shown in question 2.
+
+
+
+# Error messages and solutions
+
+
+1. Error:
+
+```
+[Dapp] Error: Could not perform operation on '<operation>' on contract with address '<contract address>'
+```
+
+Solution: Check and make sure blocks are in sync between neoscan and python prompt.
+
+2. Error:
+```
+[E 180302 22:30:01 ExecutionEngine:825] COULD NOT EXECUTE OP: Invalid list operation b'z' ROLL
+[E 180302 22:30:01 ExecutionEngine:826] Invalid list operation
+Traceback (most recent call last):
+  File "/Users/thomassaunders/Workshop/neo-python/neo/VM/ExecutionEngine.py", line 823, in StepInto
+    self.ExecuteOp(op, self.CurrentContext)
+  File "/Users/thomassaunders/Workshop/neo-python/neo/VM/ExecutionEngine.py", line 276, in ExecuteOp
+    estack.PushT(estack.Remove(n))
+  File "/Users/thomassaunders/Workshop/neo-python/neo/VM/RandomAccessStack.py", line 57, in Remove
+    raise Exception("Invalid list operation")
+Exception: Invalid list operation
+```
+
+Solution:
+
+It looks like we tried to test a contract that wanted some parameters but didn’t supply them. Note than if you’re building and testing contracts and you see an error similar to this, that is probably the issue you are running into.
